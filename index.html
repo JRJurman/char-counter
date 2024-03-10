@@ -12,7 +12,11 @@
 			TramDeco.watch();
 		</script>
 
-		<template td-definitions> </template>
+		<template td-definitions>
+			<threshold-slider>
+				<template shadowrootmode="open"></template>
+			</threshold-slider>
+		</template>
 
 		<style>
 			main {
@@ -43,6 +47,17 @@
 			thead tr th {
 				background: none;
 			}
+
+			label {
+				display: grid;
+				grid-template-columns: auto 1fr auto;
+				gap: 1em;
+				align-items: center;
+
+				input {
+					margin: 0px !important;
+				}
+			}
 		</style>
 
 		<script>
@@ -57,44 +72,68 @@
 					}
 				}
 
-				const countThreshold = 0;
-				const counts = Object.entries(wordCounts).filter(([word, count]) => {
-					// only return counts greater than the threshold
-					const countIsAboveThreshold = count >= countThreshold;
-					// also filter out single character variables (can't do anything with these)
-					const wordLengthIsAboveThreshold = word.length > 1;
-					return countIsAboveThreshold && wordLengthIsAboveThreshold;
-				});
-
 				// sort by total character impact
-				counts.sort(([wordA, countA], [wordB, countB]) => {
+				const counts = Object.entries(wordCounts).sort(([wordA, countA], [wordB, countB]) => {
 					return countB * wordB.length - countA * wordA.length;
 				});
 				return counts;
 			}
-		</script>
 
-		<script defer>
-			window.addEventListener('DOMContentLoaded', (event) => {
-				codeTextarea.addEventListener('input', (event) => {
-					// get word entries
-					const wordEntries = countWordOccurrences(codeTextarea.value);
+			function processWordOccurrences() {
+				// get word entries
+				const wordEntries = countWordOccurrences(codeTextarea.value);
 
-					// blow away existing table rows
-					wordEntriesTable.innerHTML = '';
-					wordEntries.forEach(([word, count]) => {
-						const newRow = document.createElement('tr');
-						newRow.innerHTML = `
-							<th scope="row">${word}</th>
-							<td>${count}</td>
-							<td>${word.length}</td>
-							<td>${count * word.length}</td>
-						`;
+				// blow away existing table rows
+				wordEntriesTable.innerHTML = '';
 
-						wordEntriesTable.appendChild(newRow);
-					});
+				const charThreshold = charThresholdInput.value;
+				const countThreshold = countThresholdInput.value;
+				const charAndCountThreshold = ([word, count]) => {
+					const countIsAboveThreshold = count >= countThreshold;
+					const wordLengthIsAboveThreshold = word.length >= charThreshold;
+					return countIsAboveThreshold && wordLengthIsAboveThreshold;
+				};
+				const unfilteredEntries = wordEntries.filter((entry) => charAndCountThreshold(entry));
+				const filteredEntries = wordEntries.filter((entry) => !charAndCountThreshold(entry));
+
+				const addNewRow = ([word, count], filtered) => {
+					const newRow = document.createElement('tr');
+					if (filtered) {
+						newRow.ariaLabel = 'below threshold';
+						newRow.style.opacity = '0.5';
+					}
+					newRow.innerHTML = `
+						<th scope="row">${word}</th>
+						<td>${count}</td>
+						<td>${word.length}</td>
+						<td>${count * word.length}</td>
+					`;
+
+					wordEntriesTable.appendChild(newRow);
+				};
+
+				// add new rows for each word entry
+				// add unfiltered first, and then filtered rows
+				unfilteredEntries.forEach((entry) => addNewRow(entry));
+				filteredEntries.forEach((entry) => addNewRow(entry, true));
+
+				// determine what the max char count and occurrence count is
+				// so we can update the threshold controls
+				const firstWordEntry = wordEntries.at(0) || ['', 0];
+				let lengthMax = firstWordEntry[0].length;
+				let countMax = firstWordEntry[1];
+				wordEntries.forEach(([word, count]) => {
+					lengthMax = Math.max(lengthMax, word.length);
+					countMax = Math.max(countMax, count);
 				});
-			});
+
+				// update the max, and set the number of steps
+				charThresholdInput.setAttribute('max', lengthMax);
+				countThresholdInput.setAttribute('max', countMax);
+				countThresholdInput.setAttribute('step', Math.max(Math.ceil(countMax / 20), 1));
+				charThresholdValue.textContent = charThresholdInput.value;
+				countThresholdValue.textContent = countThresholdInput.value;
+			}
 		</script>
 	</head>
 	<body>
@@ -102,9 +141,28 @@
 			<h1>Char Counter</h1>
 			<section>
 				<article>
-					<textarea id="codeTextarea" placeholder="Enter your code here"></textarea>
+					<textarea id="codeTextarea" placeholder="Enter your code here" oninput="processWordOccurrences()"></textarea>
 				</article>
 				<article>
+					<label
+						>Char Threshold<input
+							id="charThresholdInput"
+							type="range"
+							value="1"
+							min="1"
+							max="10"
+							oninput="processWordOccurrences()" />
+						<span id="charThresholdValue"></span
+					></label>
+					<label
+						>Count Threshold<input
+							id="countThresholdInput"
+							type="range"
+							value="1"
+							min="1"
+							max="10"
+							oninput="processWordOccurrences()" /><span id="countThresholdValue"></span
+					></label>
 					<table>
 						<thead>
 							<tr>
