@@ -13,8 +13,49 @@
 		</script>
 
 		<template td-definitions>
-			<threshold-slider>
-				<template shadowrootmode="open"></template>
+			<threshold-slider td-observedattributes="step max">
+				<template shadowrootmode="open">
+					<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.classless.min.css" />
+
+					<style>
+						label {
+							display: grid;
+							grid-template-columns: auto 1fr auto;
+							gap: 1em;
+							align-items: center;
+
+							input {
+								margin: 0px !important;
+							}
+						}
+					</style>
+
+					<label>
+						<slot></slot>
+						<input type="range" value="1" min="1" max="10" />
+						<span>1</span>
+					</label>
+				</template>
+
+				<script td-constructor>
+					this.input = this.shadowRoot.querySelector('input');
+					this.input.addEventListener('input', () => {
+						this.setAttribute('value', this.input.value);
+						this.value = this.input.value;
+						this.shadowRoot.querySelector('span').textContent = this.value;
+						processWordOccurrences();
+					});
+				</script>
+
+				<script td-attributechangedcallback>
+					if (this.getAttribute('step') !== this.input.getAttribute('step')) {
+						this.input.setAttribute('step', this.getAttribute('step'));
+					}
+
+					if (this.getAttribute('max') !== this.input.getAttribute('max')) {
+						this.input.setAttribute('max', this.getAttribute('max'));
+					}
+				</script>
 			</threshold-slider>
 		</template>
 
@@ -86,8 +127,8 @@
 				// blow away existing table rows
 				wordEntriesTable.innerHTML = '';
 
-				const charThreshold = charThresholdInput.value;
-				const countThreshold = countThresholdInput.value;
+				const charThreshold = charThresholdInput.getAttribute('value');
+				const countThreshold = countThresholdInput.getAttribute('value');
 				const charAndCountThreshold = ([word, count]) => {
 					const countIsAboveThreshold = count >= countThreshold;
 					const wordLengthIsAboveThreshold = word.length >= charThreshold;
@@ -131,8 +172,6 @@
 				charThresholdInput.setAttribute('max', lengthMax);
 				countThresholdInput.setAttribute('max', countMax);
 				countThresholdInput.setAttribute('step', Math.max(Math.ceil(countMax / 20), 1));
-				charThresholdValue.textContent = charThresholdInput.value;
-				countThresholdValue.textContent = countThresholdInput.value;
 			}
 		</script>
 	</head>
@@ -144,25 +183,8 @@
 					<textarea id="codeTextarea" placeholder="Enter your code here" oninput="processWordOccurrences()"></textarea>
 				</article>
 				<article>
-					<label
-						>Char Threshold<input
-							id="charThresholdInput"
-							type="range"
-							value="1"
-							min="1"
-							max="10"
-							oninput="processWordOccurrences()" />
-						<span id="charThresholdValue"></span
-					></label>
-					<label
-						>Count Threshold<input
-							id="countThresholdInput"
-							type="range"
-							value="1"
-							min="1"
-							max="10"
-							oninput="processWordOccurrences()" /><span id="countThresholdValue"></span
-					></label>
+					<threshold-slider id="charThresholdInput" value="1">Char Threshold</threshold-slider>
+					<threshold-slider id="countThresholdInput" value="1">Count Threshold</threshold-slider>
 					<table>
 						<thead>
 							<tr>
