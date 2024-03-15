@@ -75,14 +75,18 @@
 				display: grid;
 				grid-template-columns: 1fr auto;
 				gap: 1em;
-				height: 100%;
 				overflow: hidden;
+				margin-bottom: 0;
 			}
 
 			article {
 				box-shadow: 5px 5px 5px black;
-				height: 100%;
 				overflow-y: scroll;
+			}
+
+			article:has(#codeTextarea) {
+				display: grid;
+				grid-template-rows: auto 1fr;
 			}
 
 			thead tr th {
@@ -180,11 +184,17 @@
 			<h1>Char Counter</h1>
 			<section>
 				<article>
+					<p>
+						Enter code in the textarea below to see a breakdown of each variable in the table to the right. <br />
+						You can use the sliders to filter variables that have more characters or more counts first.
+					</p>
 					<textarea id="codeTextarea" placeholder="Enter your code here" oninput="processWordOccurrences()"></textarea>
 				</article>
 				<article>
-					<threshold-slider id="charThresholdInput" value="1">Char Threshold</threshold-slider>
-					<threshold-slider id="countThresholdInput" value="1">Count Threshold</threshold-slider>
+					<threshold-slider id="charThresholdInput" value="1" aria-label="force words with higher "
+						>Char Threshold</threshold-slider
+					>
+					<threshold-slider id="countThresholdInput" value="1" aria-label="">Count Threshold</threshold-slider>
 					<table>
 						<thead>
 							<tr>
